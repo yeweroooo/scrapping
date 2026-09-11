@@ -90,7 +90,7 @@ async function submitRetry(url, opts = {}) {
       return await submit(url, await getToken(), opts.locale);
     } catch (e) {
       lastErr = e;
-      /* transient: rate limit, connection reset (no code), or odd empty responses */
+      /* transient: rate limits, connection resets, empty responses */
       const transient = e.code === undefined || ['LIMIT', 'UNKNOWN', 'HTTP', 'TOKEN'].includes(e.code);
       if (!transient) throw e;
       await sleep(2500 * 2 ** i);
@@ -482,7 +482,7 @@ async function main(argv) {
     }
     if (i < urls.length - 1 && delay) await sleep(delay * 1000);
   }
-  console.log(JSON.stringify(results, null, 2));
+  console.log(JSON.stringify(results, null, jsonOut ? 0 : 2));
   process.exit(results.every((r) => !r.error) ? 0 : 1);
 }
 

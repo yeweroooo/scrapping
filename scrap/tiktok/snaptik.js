@@ -2,48 +2,48 @@
 'use strict';
 /*
  * snaptik.js: snaptik.app TikTok downloader client (video, HD, carousel
- * images, slideshow video, audio) plus full post metadata from TikTok's own
- * page data (likes, comments, shares, plays, saves, author stats, music).
+ * images, slideshow video, audio) plus post metadata from TikTok's own page
+ * data (likes, comments, shares, plays, saves, author stats, music).
  *
  * Plain HTTPS, no dependencies, Node >= 18 (global fetch + WebCrypto).
- * Site flow verified 2026-09-11 against snaptik.app/en3 and /js/core.min.js.
+ * Verified 2026-09-11 against snaptik.app/en3 and /js/core.min.js.
  *
  * Flow:
  *   1. POST /api/token -> {id, p}; p is base64(iv || AES-256-CBC(puzzle)).
- *      Key = SHA256("sn4pt1k_v3r1fy2026:" + id). Solve the puzzle, build the
- *      header token "id:answer:_e:_h".
- *
- * The token is a per-session challenge pass, NOT an API key: it has a 300
- * second expiry (_e, unix seconds) and is reusable inside that window. This
- * client solves a FRESH token for every extract attempt and every HD call, so
- * a stale or throttled token is never reused. Limit-like failures (fresh
- * 403s, rate messages) are retried with exponential backoff.
+ *      Key = SHA256("sn4pt1k_v3r1fy2026:" + id). Solve the puzzle and build
+ *      the X-Verify header "id:answer:_e:_h".
  *   2. GET /api/extract?url=<tiktok url> with X-Verify -> type, downloadUrl,
  *      hdDownloadUrl, stats, author, images[].
- *   3. HD: GET /api/hd?token=... with a FRESH X-Verify -> {url}. Without
+ *   3. HD: GET /api/hd?token=... with a fresh X-Verify -> {url}. Without
  *      X-Verify the endpoint answers 403 {"error":true}.
  *   4. Enrichment: fetch the post page with an iPhone UA and parse the
  *      <script id="api-data"> blob for exact stats (likeCount = diggCount,
  *      collectCount = saves), author stats and music.playUrl (the mp3).
  *
- * Notes on what snaptik itself does and does not expose:
- *   - No likeCount, no audio-only URL: both come from the TikTok enrichment.
+ * Tokens: the X-Verify pass is a per-session challenge, not an API key. It
+ * expires after 300 seconds (_e, unix seconds) and is reusable inside that
+ * window. This client solves a fresh one for every extract attempt and every
+ * HD call, so a stale or throttled pass is never reused. Limit-like failures
+ * (fresh 403s, rate messages) retry with exponential backoff.
+ *
+ * What snaptik does not expose:
+ *   - No likeCount and no audio URL: both come from the TikTok enrichment.
  *   - hdDownloadUrl is a path (/api/hd?token=...), not a media URL.
  *   - Carousel downloadUrl is a rendered slideshow video, not an image.
- *   - TikTok video.playAddr / bitrateInfo URLs are IP+cookie bound and answer
- *     403 outside the session that requested them; they are reported with
- *     sessionBound: true instead of being presented as direct downloads.
+ *   - TikTok playAddr / bitrateInfo URLs are IP and cookie bound and answer
+ *     403 outside the requesting session; they are reported under
+ *     meta.sessionBound instead of being offered as downloads.
  *
  * Usage:
  *   node snaptik.js <tiktok-url> [<url> ...] [options]
  * Options:
- *   --json            single-line JSON (default is 2-space pretty)
+ *   --json            single-line JSON (default: 2-space pretty)
  *   --download [dir]  also save media to dir (default: downloads)
  *   --no-hd           skip HD resolution (saves one request)
  *   --no-enrich       skip the TikTok metadata fetch
  *   --delay SECONDS   pause between multiple URLs
  *
- * Output: the JSON result on stdout, progress and errors on stderr.
+ * Output: JSON on stdout, progress and errors on stderr.
  */
 
 const DESKTOP_UA =
@@ -82,12 +82,12 @@ async function http(url, opts = {}) {
   try {
     text = await res.text();
   } catch (_) {
-    /* empty or unreadable body, callers check text.length */
+    /* unreadable body; callers handle empty text */
   }
   return { status: res.status, headers: res.headers, text, url: res.url };
 }
 
-/* ---------- challenge: /api/token -> X-Verify header ---------- */
+// challenge: /api/token -> X-Verify header
 
 const encoder = new TextEncoder();
 
@@ -137,13 +137,13 @@ async function getToken() {
   return solveChallenge(body.id, body.p);
 }
 
-/* ---------- /api/extract ---------- */
+// /api/extract
 
 async function extractRaw(inputUrl, { tries = 4 } = {}) {
   let lastErr;
-  // What to retry: connection/HTTP failures, challenge failures, and site
-  // errors that smell like rate limiting. A fresh token is solved on every
-  // attempt, so token-expiry errors heal by themselves.
+  // Retry connection/HTTP failures, challenge failures, and site errors that
+  // smell like rate limiting. Each attempt solves a fresh token, so expiry
+  // errors heal on retry.
   const transient = (e) =>
     !e.code ||
     ['HTTP', 'TOKEN', 'CHALLENGE', 'EMPTY', 'LIMIT'].includes(e.code) ||
@@ -201,7 +201,7 @@ async function resolveHd(hdPath) {
   return json.url;
 }
 
-/* ---------- TikTok enrichment ---------- */
+// TikTok enrichment
 
 async function enrich(tiktokUrl) {
   let res;
@@ -296,14 +296,14 @@ async function enrich(tiktokUrl) {
       dynamicCover: video.dynamicCover || null,
     },
     hashtags: (item.challenges || []).map((c) => c.title).filter(Boolean),
-    // Mentions carry no hashtagId; the type code differs between TikTok
-    // schemas (legacy: 1 = mention, api-data: 1 = hashtag), so key on fields.
+    // Hashtags carry type 1 in api-data, so mentions are detected by the
+    // missing hashtagId, not the type code.
     mentions: (item.textExtra || [])
       .filter((t) => !t.hashtagId && (t.userUniqueId || t.userId))
       .map((t) => `@${t.userUniqueId || t.userId}`),
     location: item.locationCreated || null,
-    // Direct CDN play URLs TikTok hands out are IP+cookie bound, so they are
-    // reported as session-bound instead of being offered as downloads.
+    // TikTok's own CDN URLs are IP and cookie bound; report them as
+    // session-bound, not as downloads.
     sessionBound: {
       playUrl: video.playAddr || null,
       downloadUrl: video.downloadAddr || null,
@@ -335,7 +335,7 @@ async function enrich(tiktokUrl) {
   return out;
 }
 
-/* ---------- canonical URL ---------- */
+// canonical URL
 
 async function canonicalize(rawUrl) {
   let url;
@@ -355,7 +355,7 @@ async function canonicalize(rawUrl) {
   return rawUrl;
 }
 
-/* ---------- merge ---------- */
+// merge
 
 function buildResult(rawUrl, canonical, data, tiktok) {
   const tt = tiktok && tiktok.ok ? tiktok : null;
@@ -450,7 +450,7 @@ async function extract(rawUrl, opts = {}) {
   return buildResult(rawUrl, canonical, data, tiktok);
 }
 
-/* ---------- optional file save ---------- */
+// optional file save
 
 function sniffExt(buf) {
   if (buf.length >= 12 && buf.subarray(0, 4).toString() === 'RIFF' && buf.subarray(8, 12).toString() === 'WEBP') return '.webp';
@@ -503,7 +503,7 @@ async function saveDownloads(result, dir) {
   return saved;
 }
 
-/* ---------- CLI ---------- */
+// CLI
 
 function usage() {
   return [

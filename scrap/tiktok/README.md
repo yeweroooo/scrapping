@@ -23,8 +23,8 @@ or when you specifically want the tikcdn.io CDN URLs.
 | Photo carousel | each slide (URL, dimensions, download link), MP3 audio, rendered MP4 of the carousel |
 | Both | exact stats (likes, comments, shares, plays, saves), author + follower stats, verified flag, caption, hashtags, mentions, create time, music (title, author, duration, play URL), video duration and dimensions |
 
-Metadata comes from the post page's own hydration JSON (`<script id="api-data">`),
-so counts are exact integers, not the rounded display values (33.7K) that
+Counts come from the post page's own hydration JSON (`<script id="api-data">`),
+so they are exact integers, not the rounded display values (33.7K) that
 downloader sites show.
 
 ## Quick start
@@ -71,4 +71,3 @@ that requested them.
 - iPhone user agent for the TikTok metadata fetch (the desktop UA gets a WAF)
 - Rate-limit style failures retried with exponential backoff
 - CDN links carry expiring signatures: download soon after resolving
-- `--delay SECONDS` to space out batch runs, since both backends rate-limit per IP

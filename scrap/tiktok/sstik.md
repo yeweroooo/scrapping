@@ -30,7 +30,7 @@ Always prints JSON to stdout. Exit code is 0 when every URL succeeded.
 - `--delay SECONDS` : pause between URLs (rate limiting)
 - `--no-enrich` : skip the TikTok metadata fetch
 - `--no-hd` : skip the HD resolution request
-- `--json` : no-op, kept for compatibility
+- `--json` : compact single-line JSON (default is 2-space pretty)
 
 ### Module usage
 

@@ -7,27 +7,24 @@ zero-dependency Node clients plus their docs.
 |---|---|---|
 | TikTok | [`tiktok/`](tiktok/) | [`snaptik.js`](tiktok/snaptik.js) (snaptik.app API), [`sstik.js`](tiktok/sstik.js) (ssstik.io flow) |
 
-More sources land here as they are built; the TikTok directory is the
-reference implementation of the layout below.
+The TikTok directory is the reference implementation of the layout below.
 
 ## Conventions
 
-Every scraper in this collection follows the same rules, so the structure stays
-predictable as sources are added.
-
 - One directory per source: `scrap/<source>/`, for example `scrap/tiktok/`
 - One client per backend: `<backend>.js` with a matching `<backend>.md`
-- Each source directory has a `README.md` indexing its clients, how to choose
-  between them, and any cross-client differences
+- Each source directory has a `README.md` indexing its clients and any
+  cross-client differences
 - Node >= 18, no npm dependencies (built-in `fetch` and `node:` modules only)
 - Result JSON on stdout, progress and errors on stderr, one object per input
-  URL (array when given several). `--json` switches to compact single-line
-- Consistent CLI surface: positional URLs, `--download [dir]`, `--delay SECONDS`,
-  `--json`, plus `--no-enrich` / `--no-hd` where they apply
+  URL (array when given several); `--json` switches to compact single-line
+- Consistent CLI surface: positional URLs, `--download [dir]`,
+  `--delay SECONDS`, `--json`, plus `--no-enrich` and `--no-hd` where they
+  apply
 - Docs state the honest limits: expiring CDN links, per-IP rate limits, values
   the backend genuinely does not expose
-- A nonzero exit code means at least one input failed; failures are reported as
-  `{source, error, code}` objects in the same array as successes
+- A nonzero exit code means at least one input failed; failures are reported
+  as `{source, error, code}` objects in the same array as successes
 
 ## Adding a source
 
@@ -36,10 +33,6 @@ predictable as sources are added.
    pitfalls and the limits
 3. Add `scrap/<source>/README.md` with a client table
 4. Add a row to the table above and to the root [README](../README.md)
-
-## Requirements
-
-- Node.js >= 18 (uses the built-in `fetch`, no packages)
 
 ## Running a client
 

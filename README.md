@@ -1,7 +1,7 @@
 # scrapping
 
 A collection of scrapers for various data sources. Zero-dependency Node
-clients, plain HTTPS. No browser, no npm install.
+clients, plain HTTPS. No browser automation, no npm install.
 
 | Source | Directory | Tools | Verified |
 |---|---|---|---|
@@ -10,26 +10,17 @@ clients, plain HTTPS. No browser, no npm install.
 New sources land under `scrap/<source>/` as they are built. The layout and the
 rules every client follows are documented in [`scrap/README.md`](scrap/README.md).
 
-## TikTok tools, at a glance
+## What the TikTok tools do
 
-For any TikTok post (video or photo carousel):
-
-- **Video**: no-watermark MP4
-- **Video HD**: original quality MP4
-- **Audio**: MP3 of the post's sound, direct CDN link included
-- **Photo carousel**: every slide image (URL, dimensions, download link),
-  plus a rendered MP4 of the whole carousel
-- **Metadata**: exact likes, comments, shares, plays, saves; author info,
-  follower counts and verified flag; caption, hashtags, mentions, creation
-  time; music title, author and play URL; video duration and dimensions
-
-Counts come from the post page's own hydration JSON (`<script id="api-data">`),
-so they are exact integers, not the rounded display values (33.7K) that
-downloader sites show.
+For any TikTok post, video or photo carousel: no-watermark MP4, original
+quality HD MP4, MP3 audio, every carousel slide plus a rendered MP4 of the
+carousel, and exact stats (likes, comments, shares, plays, saves) with author,
+music and caption metadata. Capabilities, output shape and client comparison
+live in [`scrap/tiktok/README.md`](scrap/tiktok/README.md).
 
 ## Requirements
 
-- Node.js >= 18 (uses the built-in `fetch`, no npm packages)
+- Node.js >= 18 (uses the built-in `fetch`, no packages)
 
 ## Quick start
 
@@ -39,8 +30,7 @@ node scrap/tiktok/snaptik.js "https://www.tiktok.com/@user/photo/123456789012345
 node scrap/tiktok/sstik.js   "https://www.tiktok.com/@user/video/1234567890123456789" --delay 3
 ```
 
-JSON goes to stdout, logs to stderr. Flags and output shape per client:
-[`scrap/tiktok/README.md`](scrap/tiktok/README.md).
+JSON goes to stdout, logs to stderr.
 
 ## Project structure
 
