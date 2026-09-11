@@ -1,28 +1,48 @@
 # scrap
 
-Two zero-dependency Node clients for pulling TikTok media and exact metadata.
+Scraper collection. One directory per data source, each holding standalone
+zero-dependency Node clients plus their docs.
 
-- [`sstik.js`](sstik.md): backed by the ssstik.io conversion flow
-- [`snaptik.js`](snaptik.md): backed by the snaptik.app JSON API (preferred:
-  its gate is a solvable client-side challenge, so plain HTTP is enough)
+| Source | Directory | Tools |
+|---|---|---|
+| TikTok | [`tiktok/`](tiktok/) | [`snaptik.js`](tiktok/snaptik.js) (snaptik.app API), [`sstik.js`](tiktok/sstik.js) (ssstik.io flow) |
 
-Both require Node >= 18, print JSON to stdout, and share the same result
-shape (`type`, `source`, `downloads`, `stats`, `author`, `music`, `video`,
-`meta`).
+More sources land here as they are built; the TikTok directory is the
+reference implementation of the layout below.
 
-## Capabilities
+## Conventions
 
-| Post type | Outputs |
-|---|---|
-| Video | no-watermark MP4, original-quality HD MP4, MP3 audio, cover image |
-| Photo carousel | each slide (metadata + download link), MP3 audio, rendered MP4 of the carousel |
-| Both | exact stats (likes, comments, shares, plays, saves), author + follower stats, caption, hashtags, create time, music (title, author, play URL), video duration and dimensions |
+Every scraper in this collection follows the same rules, so the structure stays
+predictable as sources are added.
 
-## Which one to use
+- One directory per source: `scrap/<source>/`, for example `scrap/tiktok/`
+- One client per backend: `<backend>.js` with a matching `<backend>.md`
+- Each source directory has a `README.md` indexing its clients, how to choose
+  between them, and any cross-client differences
+- Node >= 18, no npm dependencies (built-in `fetch` and `node:` modules only)
+- Result JSON on stdout, progress and errors on stderr, one object per input
+  URL (array when given several). `--json` switches to compact single-line
+- Consistent CLI surface: positional URLs, `--download [dir]`, `--delay SECONDS`,
+  `--json`, plus `--no-enrich` / `--no-hd` where they apply
+- Docs state the honest limits: expiring CDN links, per-IP rate limits, values
+  the backend genuinely does not expose
+- A nonzero exit code means at least one input failed; failures are reported as
+  `{source, error, code}` objects in the same array as successes
 
-Prefer `snaptik.js`: the challenge is solved in-process, no browser tricks,
-and the video links come straight from d.rapidcdn.app. Use `sstik.js` when
-snaptik is rate-limiting your IP, or when you specifically want the tikcdn.io
-CDN URLs.
+## Adding a source
 
-Both services rate-limit per IP; space out batch runs with `--delay`.
+1. `mkdir scrap/<source>`
+2. Add `<backend>.js` plus `<backend>.md` covering the flow, the gate, the
+   pitfalls and the limits
+3. Add `scrap/<source>/README.md` with a client table
+4. Add a row to the table above and to the root [README](../README.md)
+
+## Requirements
+
+- Node.js >= 18 (uses the built-in `fetch`, no packages)
+
+## Running a client
+
+```bash
+node scrap/<source>/<backend>.js "<url>" [--download ./out] [--json] [--delay 3]
+```
