@@ -1,12 +1,15 @@
 # scrapping
 
 A collection of scrapers for various data sources. Zero-dependency Node
-clients, plain HTTPS. No browser automation, no npm install.
+clients over plain HTTPS. No browser in the normal path, no npm install; the
+only exception is an optional browser fallback for the Instagram client, used
+when a backend challenges the HTTP client.
 
 | Source | Directory | Tools | Verified |
 |---|---|---|---|
 | TikTok | [`scrap/tiktok/`](scrap/tiktok/) | [`snaptik.js`](scrap/tiktok/snaptik.js) (snaptik.app JSON API), [`sstik.js`](scrap/tiktok/sstik.js) (ssstik.io flow) | 2026-09-11 |
 | Spotify | [`scrap/spotify/`](scrap/spotify/) | [`spotidown.js`](scrap/spotify/spotidown.js) (spotidown.app flow) | 2026-09-11 |
+| Instagram | [`scrap/instagram/`](scrap/instagram/) | [`igdownload.js`](scrap/instagram/igdownload.js) (fastdl.app worker hub, signed API over HTTP/2) | 2026-09-11 |
 
 New sources land under `scrap/<source>/` as they are built. The layout and the
 rules every client follows are documented in [`scrap/README.md`](scrap/README.md).
@@ -18,6 +21,17 @@ the HD cover, and per-track metadata (title, artist, album, duration, release
 year, Spotify track id, cover URL) for every track in the collection.
 Capabilities, output shape and the measured quality caveat live in
 [`scrap/spotify/README.md`](scrap/spotify/README.md).
+
+## What the Instagram tool does
+
+For any Instagram post, reel, IGTV link, carousel, story or profile: every media
+item the downloader exposes (video renditions, slide images, thumbnails, the
+post's audio track), with the direct CDN URL decoded out of the proxy link, plus
+author, caption, likes, comments, views, taken time, the reel's soundtrack and
+the DASH manifest split into video and audio renditions. Profile mode adds
+followers, the post feed with cursors, stories and highlights. Capabilities,
+output shape and the transport-gate story live in
+[`scrap/instagram/README.md`](scrap/instagram/README.md).
 
 ## What the TikTok tools do
 
@@ -38,6 +52,8 @@ node scrap/tiktok/snaptik.js "https://www.tiktok.com/@user/video/123456789012345
 node scrap/tiktok/snaptik.js "https://www.tiktok.com/@user/photo/1234567890123456789" --download ./out
 node scrap/tiktok/sstik.js   "https://www.tiktok.com/@user/video/1234567890123456789" --delay 3
 node scrap/spotify/spotidown.js "https://open.spotify.com/album/6QdCohkHKNTVoaSx1ZzitH" --download ./out
+node scrap/instagram/igdownload.js "https://www.instagram.com/reel/DO5tIDME6t-/"
+node scrap/instagram/igdownload.js gazdaviesmedia --pages 2 --json
 ```
 
 JSON goes to stdout, logs to stderr.
@@ -55,10 +71,16 @@ scrapping/
     │   ├── snaptik.md       snaptik.app docs: flow, tokens, limits
     │   ├── sstik.js         ssstik.io client
     │   └── sstik.md         ssstik.io docs: flow, pitfalls, limits
-    └── spotify/
-        ├── README.md        what you get, quality caveat, limits
-        ├── spotidown.js     spotidown.app client
-        └── spotidown.md     spotidown.app docs: flow, gate, pitfalls
+    ├── spotify/
+    │   ├── README.md        what you get, quality caveat, limits
+    │   ├── spotidown.js     spotidown.app client
+    │   └── spotidown.md     spotidown.app docs: flow, gate, pitfalls
+    └── instagram/
+        ├── README.md        what you get, output shape, limits
+        ├── igdownload.js    fastdl.app client (signed API over HTTP/2)
+        ├── igdownload.md    fastdl.app docs: signature, transport gate, pitfalls
+        ├── verify_igdownload.js  16-check test report
+        └── solver/          optional browser fallback: Turnstile token, mirror mode
 ```
 
 ## How it works (short version)
@@ -75,6 +97,13 @@ scrapping/
 - **Enrichment (both)**: fetch the post page with an iPhone user agent (the
   desktop UA gets a WAF) and parse the `api-data` JSON for exact counts,
   author stats and the music URL.
+
+- **fastdl.app**: the worker hub wants an HMAC-signed body
+  (`_s` = HMAC-SHA256 of the sorted JSON plus `ts`), and it answers the
+  Turnstile challenge to HTTP/1.1 clients only, so the client speaks HTTP/2. An
+  optional browser fallback mints a Turnstile token or replays the request from
+  inside the page. Details in
+  [`scrap/instagram/igdownload.md`](scrap/instagram/igdownload.md).
 
 - **spotidown.app**: `GET /en7` for the session cookie and a hidden anti-bot
   field whose name rotates per page load, `POST /action` (a `g-recaptcha-response`

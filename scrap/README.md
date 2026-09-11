@@ -7,6 +7,7 @@ zero-dependency Node clients plus their docs.
 |---|---|---|
 | TikTok | [`tiktok/`](tiktok/) | [`snaptik.js`](tiktok/snaptik.js) (snaptik.app API), [`sstik.js`](tiktok/sstik.js) (ssstik.io flow) |
 | Spotify | [`spotify/`](spotify/) | [`spotidown.js`](spotify/spotidown.js) (spotidown.app flow) |
+| Instagram | [`instagram/`](instagram/) | [`igdownload.js`](instagram/igdownload.js) (fastdl.app worker hub) |
 
 The TikTok directory is the reference implementation of the layout below.
 
@@ -16,7 +17,10 @@ The TikTok directory is the reference implementation of the layout below.
 - One client per backend: `<backend>.js` with a matching `<backend>.md`
 - Each source directory has a `README.md` indexing its clients and any
   cross-client differences
-- Node >= 18, no npm dependencies (built-in `fetch` and `node:` modules only)
+- Node >= 18, no npm dependencies (built-in `fetch` and `node:` modules only).
+  The one exception is `scrap/instagram/solver/`, an optional browser fallback
+  that needs `npm install patchright`; the Instagram client works fully without
+  it and only starts a browser when Cloudflare challenges it
 - Result JSON on stdout, progress and errors on stderr, one object per input
   URL (array when given several); `--json` switches to compact single-line
 - Consistent CLI surface: positional URLs, `--download [dir]`,

@@ -1,0 +1,11 @@
+{
+  "name": "igdownload-solver",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Optional browser layer for igdownload.js: Turnstile token minting and request mirroring for fastdl.app",
+  "type": "commonjs",
+  "license": "MIT",
+  "dependencies": {
+    "patchright": "^1.63.0"
+  }
+}
