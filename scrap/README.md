@@ -6,6 +6,7 @@ zero-dependency Node clients plus their docs.
 | Source | Directory | Tools |
 |---|---|---|
 | TikTok | [`tiktok/`](tiktok/) | [`snaptik.js`](tiktok/snaptik.js) (snaptik.app API), [`sstik.js`](tiktok/sstik.js) (ssstik.io flow) |
+| Spotify | [`spotify/`](spotify/) | [`spotidown.js`](spotify/spotidown.js) (spotidown.app flow) |
 
 The TikTok directory is the reference implementation of the layout below.
 
